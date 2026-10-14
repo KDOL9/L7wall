@@ -108,15 +108,17 @@ int main(int argc, char** argv) {
     table.for_each([&](const l7wall::Flow& flow) { flows.push_back(&flow); });
     std::ranges::sort(flows, std::ranges::greater{}, &l7wall::Flow::total_bytes);
 
-    std::cout << std::format("{:<7} {:<24} {:<24} {:>8} {:>10} {:>8}\n", "PROTO", "CLIENT",
-                             "SERVER", "PKTS", "BYTES", "DUR(ms)");
+    std::cout << std::format("{:<7} {:<24} {:<24} {:<12} {:>8} {:>10} {:>8}\n", "PROTO",
+                             "CLIENT", "SERVER", "STATE", "PKTS", "BYTES", "DUR(ms)");
     for (const l7wall::Flow* flow : flows | std::views::take(opts->top)) {
         const auto duration =
             std::chrono::duration_cast<std::chrono::milliseconds>(flow->last_seen - flow->first_seen);
-        std::cout << std::format("{:<7} {:<24} {:<24} {:>8} {:>10} {:>8}\n",
+        const bool is_tcp = flow->protocol == static_cast<std::uint8_t>(l7wall::IpProtocol::Tcp);
+        std::cout << std::format("{:<7} {:<24} {:<24} {:<12} {:>8} {:>10} {:>8}\n",
                                  l7wall::protocol_name(flow->protocol),
                                  format_endpoint(flow->client, flow->protocol),
                                  format_endpoint(flow->server, flow->protocol),
+                                 is_tcp ? l7wall::to_string(flow->tcp_state) : "-",
                                  flow->total_packets(), flow->total_bytes(), duration.count());
     }
     return EXIT_SUCCESS;
