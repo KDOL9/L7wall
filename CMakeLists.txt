@@ -25,7 +25,8 @@ if(L7WALL_SANITIZE)
 endif()
 
 add_library(l7wall_core
-    src/ip_address.cpp)
+    src/ip_address.cpp
+    src/packet.cpp)
 target_include_directories(l7wall_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(l7wall_core PRIVATE l7wall_warnings)
 

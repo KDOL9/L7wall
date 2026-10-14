@@ -7,7 +7,8 @@ set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 add_executable(l7wall_tests
-    ip_address_test.cpp)
+    ip_address_test.cpp
+    packet_test.cpp)
 target_link_libraries(l7wall_tests PRIVATE l7wall_core l7wall_warnings GTest::gtest_main)
 
 include(GoogleTest)
