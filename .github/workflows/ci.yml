@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-gcc
+            os: ubuntu-24.04
+            cxx: g++-14
+            sanitize: OFF
+          - name: linux-clang-asan-ubsan
+            os: ubuntu-24.04
+            cxx: clang++-18
+            sanitize: ON
+          - name: macos-clang
+            os: macos-15
+            cxx: clang++
+            sanitize: OFF
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: >
+          cmake -S . -B build
+          -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_CXX_COMPILER=${{ matrix.cxx }}
+          -DL7WALL_WERROR=ON
+          -DL7WALL_SANITIZE=${{ matrix.sanitize }}
+
+      - name: Build
+        run: cmake --build build -j 4
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
