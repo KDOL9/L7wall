@@ -37,7 +37,30 @@ std::size_t FlowKeyHash::operator()(const FlowKey& key) const noexcept {
     return seed;
 }
 
-FlowTable::FlowTable(std::chrono::nanoseconds idle_timeout) : idle_timeout_(idle_timeout) {}
+std::chrono::seconds TimeoutPolicy::timeout_for(const Flow& flow) const noexcept {
+    if (flow.protocol == static_cast<std::uint8_t>(IpProtocol::Udp)) {
+        return udp;
+    }
+    if (flow.protocol != static_cast<std::uint8_t>(IpProtocol::Tcp)) {
+        return other;
+    }
+    switch (flow.tcp_state) {
+        case TcpState::New:
+        case TcpState::SynSent:
+        case TcpState::SynReceived:
+            return tcp_handshake;
+        case TcpState::Established:
+            return tcp_established;
+        case TcpState::Closing:
+            return tcp_closing;
+        case TcpState::Closed:
+        case TcpState::Reset:
+            return tcp_closed;
+    }
+    return other;
+}
+
+FlowTable::FlowTable(TimeoutPolicy policy) : policy_(policy) {}
 
 Flow& FlowTable::update(const Packet& pkt, Timestamp ts, std::size_t wire_bytes) {
     const FlowKey key = FlowKey::from_packet(pkt);
@@ -63,13 +86,21 @@ Flow& FlowTable::update(const Packet& pkt, Timestamp ts, std::size_t wire_bytes)
     ++dir.packets;
     dir.bytes += wire_bytes;
     dir.tcp_flags |= pkt.tcp_flags;
+
+    if (pkt.is(IpProtocol::Tcp)) {
+        const bool fin_both = (flow.to_server.tcp_flags & tcp_flags::Fin) != 0 &&
+                              (flow.to_client.tcp_flags & tcp_flags::Fin) != 0;
+        flow.tcp_state = next_tcp_state(flow.tcp_state, {.flags = pkt.tcp_flags,
+                                                         .from_client = from_client,
+                                                         .fin_seen_both_ways = fin_both});
+    }
     return flow;
 }
 
 std::vector<Flow> FlowTable::expire(Timestamp now) {
     std::vector<Flow> expired;
     for (auto it = flows_.begin(); it != flows_.end();) {
-        if (now - it->second.last_seen >= idle_timeout_) {
+        if (now - it->second.last_seen >= policy_.timeout_for(it->second)) {
             expired.push_back(std::move(it->second));
             it = flows_.erase(it);
         } else {

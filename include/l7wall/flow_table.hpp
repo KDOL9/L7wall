@@ -9,6 +9,7 @@
 
 #include "l7wall/ip_address.hpp"
 #include "l7wall/packet.hpp"
+#include "l7wall/tcp_state.hpp"
 
 namespace l7wall {
 
@@ -47,6 +48,7 @@ struct Flow {
     Endpoint client;  // connection initiator
     Endpoint server;
     std::uint8_t protocol = 0;
+    TcpState tcp_state = TcpState::New;
     Timestamp first_seen{};
     Timestamp last_seen{};
     DirectionStats to_server;
@@ -60,14 +62,24 @@ struct Flow {
     }
 };
 
+struct TimeoutPolicy {
+    std::chrono::seconds tcp_handshake{30};
+    std::chrono::seconds tcp_established{3600};
+    std::chrono::seconds tcp_closing{60};
+    std::chrono::seconds tcp_closed{10};
+    std::chrono::seconds udp{60};
+    std::chrono::seconds other{30};
+
+    [[nodiscard]] std::chrono::seconds timeout_for(const Flow& flow) const noexcept;
+};
+
 class FlowTable {
 public:
-    explicit FlowTable(std::chrono::nanoseconds idle_timeout = std::chrono::seconds{60});
+    explicit FlowTable(TimeoutPolicy policy = {});
 
     // Accounts the packet to its flow, creating the flow on first sight.
     Flow& update(const Packet& pkt, Timestamp ts, std::size_t wire_bytes);
 
-    // Removes flows idle for at least the configured timeout and returns them.
     std::vector<Flow> expire(Timestamp now);
 
     [[nodiscard]] const Flow* find(const FlowKey& key) const;
@@ -81,7 +93,7 @@ public:
     }
 
 private:
-    std::chrono::nanoseconds idle_timeout_;
+    TimeoutPolicy policy_;
     std::unordered_map<FlowKey, Flow, FlowKeyHash> flows_;
 };
 
