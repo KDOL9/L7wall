@@ -32,6 +32,9 @@ add_library(l7wall_core
 target_include_directories(l7wall_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(l7wall_core PRIVATE l7wall_warnings)
 
+add_executable(l7wall apps/l7wall_cli.cpp)
+target_link_libraries(l7wall PRIVATE l7wall_core l7wall_warnings)
+
 if(L7WALL_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
