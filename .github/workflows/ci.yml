@@ -20,6 +20,8 @@ jobs:
           - name: linux-clang-asan-ubsan
             os: ubuntu-24.04
             cxx: clang++-18
+            cxxflags: -stdlib=libc++
+            packages: libc++-18-dev libc++abi-18-dev
             sanitize: ON
           - name: macos-clang
             os: macos-15
@@ -29,11 +31,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # libstdc++ hides std::expected from Clang 18, so the Clang job uses libc++.
+      - name: Install packages
+        if: matrix.packages
+        run: sudo apt-get update && sudo apt-get install -y ${{ matrix.packages }}
+
       - name: Configure
         run: >
           cmake -S . -B build
           -DCMAKE_BUILD_TYPE=Debug
           -DCMAKE_CXX_COMPILER=${{ matrix.cxx }}
+          -DCMAKE_CXX_FLAGS="${{ matrix.cxxflags }}"
           -DL7WALL_WERROR=ON
           -DL7WALL_SANITIZE=${{ matrix.sanitize }}
 
