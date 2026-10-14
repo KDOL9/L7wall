@@ -1,0 +1,9 @@
+build/
+cmake-build-*/
+.cache/
+.vscode/
+.idea/
+.DS_Store
+*.pcap
+*.pcapng
+compile_commands.json
