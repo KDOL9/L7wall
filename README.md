@@ -8,7 +8,7 @@ identification and policy enforcement.
 
 ## Status
 
-Stage 1 — offline analysis of pcap captures:
+Offline analysis of pcap captures:
 
 - **pcap reader**: own implementation of the libpcap file format (both byte orders,
   µs and ns timestamps), no libpcap dependency
@@ -16,7 +16,9 @@ Stage 1 — offline analysis of pcap captures:
   IPv4 / IPv6 (with extension headers) → TCP / UDP; zero-copy, bounds-checked,
   errors reported via `std::expected`
 - **flow table**: bidirectional 5-tuple tracking, client/server detection,
-  per-direction packet/byte counters and TCP flags, idle timeout expiry
+  per-direction packet/byte counters and TCP flags
+- **TCP state machine**: handshake, graceful close, reset and mid-stream pickup,
+  with separate expiry timeouts per TCP state and per protocol
 
 ## Architecture
 
@@ -51,15 +53,15 @@ packets: 6 parsed, 1 skipped
   unsupported ethertype    1
 flows:   2
 
-PROTO   CLIENT                   SERVER                       PKTS      BYTES  DUR(ms)
-TCP     192.168.1.10:51000       142.250.74.14:443               4       2116       60
-UDP     192.168.1.10:53000       8.8.8.8:53                      2        174       20
+PROTO   CLIENT                   SERVER                   STATE            PKTS      BYTES  DUR(ms)
+TCP     192.168.1.10:51000       142.250.74.14:443        ESTABLISHED         4       2116       60
+UDP     192.168.1.10:53000       8.8.8.8:53               -                   2        174       20
 ```
 
 ## Roadmap
 
 - [x] pcap reader, L2–L4 decoder, flow table
-- [ ] TCP state machine (handshake / teardown / RST), per-state timeouts
+- [x] TCP state machine (handshake / teardown / RST), per-state timeouts
 - [ ] L7 identification: TLS ClientHello SNI, HTTP Host, DNS queries
 - [ ] Rule language and policy engine (`block tls sni *.example.com`)
 - [ ] Inline mode on Linux via NFQUEUE (accept / drop verdicts on live traffic)
