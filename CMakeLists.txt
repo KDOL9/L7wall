@@ -29,7 +29,8 @@ add_library(l7wall_core
     src/packet.cpp
     src/pcap_reader.cpp
     src/flow_table.cpp
-    src/tcp_state.cpp)
+    src/tcp_state.cpp
+    src/tls.cpp)
 target_include_directories(l7wall_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(l7wall_core PRIVATE l7wall_warnings)
 

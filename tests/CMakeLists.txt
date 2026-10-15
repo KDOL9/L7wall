@@ -11,7 +11,8 @@ add_executable(l7wall_tests
     packet_test.cpp
     pcap_reader_test.cpp
     flow_table_test.cpp
-    tcp_state_test.cpp)
+    tcp_state_test.cpp
+    tls_test.cpp)
 target_link_libraries(l7wall_tests PRIVATE l7wall_core l7wall_warnings GTest::gtest_main)
 
 include(GoogleTest)
